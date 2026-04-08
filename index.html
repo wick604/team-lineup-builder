@@ -1,121 +1,614 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Team Lineup Builder</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team Lineup Builder</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; background:#f1f5f9; }
-    h2 { margin-bottom: 5px; }
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #dbe4ee;
+      --primary: #0f172a;
+      --soft: #f8fafc;
+      --good: #ecfdf5;
+      --good-text: #166534;
+      --warn: #fff7ed;
+      --warn-text: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
     .card {
-      background:white;
-      padding:20px;
-      border-radius:12px;
-      margin-bottom:15px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+      padding: 20px;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    .sub { color: var(--muted); }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
     input, textarea {
-      width:100%;
-      padding:10px;
-      margin-top:8px;
-      border-radius:8px;
-      border:1px solid #ccc;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      font: inherit;
+      background: white;
+    }
+    textarea { min-height: 180px; resize: vertical; }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr 1fr;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
     button {
-      margin-top:15px;
-      padding:10px 15px;
-      border:none;
-      border-radius:8px;
-      background:#0f172a;
-      color:white;
-      cursor:pointer;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 16px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .note, .status {
+      margin-top: 14px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .note {
+      background: var(--warn);
+      color: var(--warn-text);
+    }
+    .status.success {
+      background: var(--good);
+      color: var(--good-text);
+    }
+    .status.error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    .pillrow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .pill {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
     }
     table {
-      width:100%;
+      width: 100%;
       border-collapse: collapse;
-      margin-top:10px;
-      font-size:14px;
+      margin-top: 10px;
+      font-size: 14px;
     }
     th, td {
-      border:1px solid #ddd;
-      padding:6px;
-      text-align:center;
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: top;
     }
-    th { background:#f8fafc; }
+    th {
+      background: var(--soft);
+    }
+    .preview-section {
+      margin-top: 14px;
+    }
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    pre {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Team Lineup Builder</h1>
+      <p class="sub">Paste a TeamSnap games-only calendar link, add your roster, choose innings, and export a workbook with one sheet per game plus a tracking page.</p>
 
-<h2>Team Lineup Builder</h2>
-<p>Paste TeamSnap link → add roster → preview lineup</p>
+      <label for="icsLink">TeamSnap games-only .ics link</label>
+      <input id="icsLink" placeholder="https://ical-cdn.teamsnap.com/team_schedule/filter/games/... .ics" />
 
-<div class="card">
-  <label>TeamSnap Games Link</label>
-  <input id="link" placeholder="Paste .ics link (games only)">
-</div>
+      <div class="grid" style="margin-top:14px;">
+        <div>
+          <label for="teamName">Team name override (optional)</label>
+          <input id="teamName" placeholder="Leave blank to use the calendar name if available" />
+        </div>
+        <div>
+          <label for="innings">Innings per game</label>
+          <input id="innings" type="number" min="1" max="20" value="3" />
+        </div>
+      </div>
 
-<div class="card">
-  <label>Roster (one per line)</label>
-  <textarea id="roster" rows="8"></textarea>
-</div>
+      <div style="margin-top:14px;">
+        <label for="roster">Roster (one player per line)</label>
+        <textarea id="roster" placeholder="Player 1&#10;Player 2&#10;Player 3&#10;Player 4&#10;Player 5&#10;Player 6&#10;Player 7&#10;Player 8&#10;Player 9"></textarea>
+      </div>
 
-<div class="card">
-  <label>Innings</label>
-  <input id="innings" type="number" value="3">
-</div>
+      <div style="margin-top:14px;">
+        <label for="requests">Special requests (saved in workbook notes)</label>
+        <textarea id="requests" placeholder="Example: Keep play time even. Prefer outfield one inning then infield next inning."></textarea>
+      </div>
 
-<button onclick="build()">Generate Lineup</button>
+      <div class="buttons">
+        <button id="previewBtn">Load schedule preview</button>
+        <button id="excelBtn" class="secondary">Export Excel</button>
+        <button id="googleBtn" class="secondary">Export for Google Sheets</button>
+      </div>
 
-<div id="preview"></div>
+      <div class="note">This version tries to fetch the calendar directly and then via a public proxy. If the TeamSnap feed or the proxy blocks access, the next step is a tiny Vercel serverless function.</div>
+      <div id="status"></div>
+    </div>
 
-<script>
+    <div class="card">
+      <h2>Preview</h2>
+      <div class="pillrow" id="summaryPills"></div>
+      <div id="previewArea" class="preview-section">
+        <p class="small">Nothing loaded yet.</p>
+      </div>
+    </div>
+  </div>
 
-const positions = [
-  "Pitcher","Catcher","1B","2B","3B","SS","LF","CF","RF"
-];
+  <script>
+    const POSITIONS = [
+      "Pitcher",
+      "Catcher",
+      "1st Base",
+      "2nd Base",
+      "3rd Base",
+      "Short Stop",
+      "Left Field",
+      "Center Field",
+      "Right Field",
+    ];
 
-function build() {
-  const roster = document.getElementById("roster").value
-    .split("\n")
-    .map(x=>x.trim())
-    .filter(Boolean);
+    let latestPlan = null;
 
-  const innings = parseInt(document.getElementById("innings").value) || 3;
-
-  if(roster.length === 0){
-    alert("Add players first");
-    return;
-  }
-
-  let html = `
-  <div class="card">
-    <h3>Game 1 Lineup</h3>
-    <table>
-      <tr>
-        <th>Position</th>
-  `;
-
-  for(let i=1;i<=innings;i++){
-    html += `<th>Inning ${i}</th>`;
-  }
-
-  html += `</tr>`;
-
-  positions.forEach((pos, i)=>{
-    html += `<tr><td>${pos}</td>`;
-    for(let j=0;j<innings;j++){
-      let player = roster[(i+j)%roster.length] || "";
-      html += `<td>${player}</td>`;
+    function setStatus(type, message) {
+      const el = document.getElementById("status");
+      if (!message) {
+        el.innerHTML = "";
+        return;
+      }
+      el.innerHTML = `<div class="status ${type}">${message}</div>`;
     }
-    html += `</tr>`;
-  });
 
-  html += `</table></div>`;
+    function cleanLines(text) {
+      return text
+        .split(/\r?\n/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
 
-  document.getElementById("preview").innerHTML = html;
-}
+    function decodeIcsValue(value) {
+      return String(value || "")
+        .replace(/\\,/g, ",")
+        .replace(/\\;/g, ";")
+        .replace(/\\n/g, " ")
+        .trim();
+    }
 
-</script>
+    function unfoldIcs(text) {
+      return text.replace(/\r?\n[ \t]/g, "");
+    }
 
+    async function fetchIcsText(url) {
+      const direct = await fetch(url);
+      if (direct.ok) return await direct.text();
+      const proxy = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+      if (proxy.ok) return await proxy.text();
+      throw new Error("Could not fetch the TeamSnap calendar link.");
+    }
+
+    function parseIcsDate(raw) {
+      const value = String(raw || "").trim();
+      if (!value) return null;
+
+      if (/^\d{8}$/.test(value)) {
+        const y = Number(value.slice(0, 4));
+        const m = Number(value.slice(4, 6)) - 1;
+        const d = Number(value.slice(6, 8));
+        return new Date(y, m, d);
+      }
+
+      const compact = value.replace("Z", "");
+      if (/^\d{8}T\d{6}$/.test(compact)) {
+        const y = Number(compact.slice(0, 4));
+        const m = Number(compact.slice(4, 6)) - 1;
+        const d = Number(compact.slice(6, 8));
+        const hh = Number(compact.slice(9, 11));
+        const mm = Number(compact.slice(11, 13));
+        const ss = Number(compact.slice(13, 15));
+        return new Date(y, m, d, hh, mm, ss);
+      }
+
+      const fallback = new Date(value);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    function formatDateShort(date) {
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function formatTabDate(date) {
+      const month = date.toLocaleDateString(undefined, { month: "short" });
+      const day = date.getDate();
+      return `${month} ${String(day).padStart(2, "0")}`;
+    }
+
+    function extractCalendarName(icsText) {
+      const unfolded = unfoldIcs(icsText);
+      const line = unfolded.match(/^X-WR-CALNAME:(.*)$/m);
+      if (line) return decodeIcsValue(line[1]);
+      return "";
+    }
+
+    function parseEvents(icsText) {
+      const unfolded = unfoldIcs(icsText);
+      const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
+      const events = [];
+
+      for (const block of blocks) {
+        const event = {};
+        const lines = block.split(/\r?\n/);
+        for (const line of lines) {
+          if (!line || line === "END:VEVENT") continue;
+          const idx = line.indexOf(":");
+          if (idx === -1) continue;
+          const left = line.slice(0, idx);
+          const value = line.slice(idx + 1);
+          const key = left.split(";")[0];
+          event[key] = decodeIcsValue(value);
+          if (key === "DTSTART") event.__dtstartRaw = value;
+          if (key === "DTEND") event.__dtendRaw = value;
+        }
+        events.push(event);
+      }
+
+      return events;
+    }
+
+    function inferMatchup(summary, teamName) {
+      const cleanSummary = String(summary || "").trim();
+      const name = teamName || "Team";
+      const normalized = cleanSummary.replace(/\s+/g, " ");
+      let homeAway = "Game";
+      let opponent = normalized || "Opponent";
+
+      if (/\baway\b/i.test(normalized) || /@/.test(normalized)) {
+        homeAway = "Away";
+      } else if (/\bhome\b/i.test(normalized) || /\bvs\b|\bvs\.\b/i.test(normalized)) {
+        homeAway = "Home";
+      }
+
+      opponent = opponent
+        .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
+        .replace(/^[-:@\s]+/, "")
+        .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
+        .replace(/^(vs\.?|@|at)\s*/i, "")
+        .trim();
+
+      if (!opponent) opponent = "Opponent";
+      const matchup = homeAway === "Away" ? `${name} @ ${opponent}` : `${name} vs ${opponent}`;
+      return { homeAway, opponent, matchup };
+    }
+
+    function parseScheduleFromIcs(icsText, teamNameOverride) {
+      const calendarName = teamNameOverride || extractCalendarName(icsText) || "Team";
+      const events = parseEvents(icsText)
+        .map((event) => {
+          const date = parseIcsDate(event.__dtstartRaw || event.DTSTART);
+          if (!date) return null;
+          const inferred = inferMatchup(event.SUMMARY || "", calendarName);
+          return {
+            dateObj: date,
+            dateText: formatDateShort(date),
+            tabDate: formatTabDate(date),
+            summary: event.SUMMARY || "Game",
+            location: event.LOCATION || "",
+            ...inferred,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.dateObj - b.dateObj);
+
+      return { teamName: calendarName, games: events };
+    }
+
+    function uniqueSheetName(base, used) {
+      let name = String(base || "Sheet").slice(0, 31);
+      let i = 2;
+      while (used.has(name)) {
+        const suffix = ` ${i}`;
+        name = String(base || "Sheet").slice(0, 31 - suffix.length) + suffix;
+        i += 1;
+      }
+      used.add(name);
+      return name;
+    }
+
+    function buildSeasonPlan(teamName, games, roster, innings, requests) {
+      const playerStats = {};
+      roster.forEach((player) => {
+        playerStats[player] = {
+          inningsPlayed: 0,
+          benchCount: 0,
+          positions: Object.fromEntries(POSITIONS.map((p) => [p, 0])),
+        };
+      });
+
+      const usedSheetNames = new Set();
+      const sheets = [];
+      let activeOffset = 0;
+      let positionOffset = 0;
+
+      games.forEach((game, gameIndex) => {
+        const inningsData = [];
+        for (let inning = 0; inning < innings; inning += 1) {
+          const activeCount = Math.min(9, roster.length);
+          const activePlayers = [];
+          for (let i = 0; i < activeCount; i += 1) {
+            activePlayers.push(roster[(activeOffset + i) % roster.length]);
+          }
+          const benchPlayers = roster.filter((p) => !activePlayers.includes(p));
+
+          const assignments = {};
+          POSITIONS.forEach((position, posIndex) => {
+            if (posIndex < activePlayers.length) {
+              const player = activePlayers[(posIndex + positionOffset) % activePlayers.length];
+              assignments[position] = player;
+              playerStats[player].inningsPlayed += 1;
+              playerStats[player].positions[position] += 1;
+            } else {
+              assignments[position] = "";
+            }
+          });
+
+          benchPlayers.forEach((player) => {
+            playerStats[player].benchCount += 1;
+          });
+
+          inningsData.push({ assignments, benchPlayers });
+          activeOffset = (activeOffset + 9) % roster.length;
+          positionOffset = (positionOffset + 1) % Math.max(1, activePlayers.length);
+        }
+
+        const homeAwayLabel = game.homeAway === "Away" ? "Away" : "Home";
+        const sheetName = uniqueSheetName(`${game.tabDate} - ${homeAwayLabel}`, usedSheetNames);
+        sheets.push({
+          gameIndex,
+          sheetName,
+          dateText: game.dateText,
+          matchup: game.matchup,
+          summary: game.summary,
+          location: game.location,
+          inningsData,
+        });
+      });
+
+      return { teamName, roster, innings, requests, sheets, playerStats };
+    }
+
+    function buildWorkbook(plan, forGoogle) {
+      const wb = XLSX.utils.book_new();
+      const inningCols = Array.from({ length: plan.innings }, (_, i) => i + 1);
+      const lastCol = 1 + plan.innings;
+      const lastColLetter = XLSX.utils.encode_col(lastCol - 1);
+
+      plan.sheets.forEach((sheet) => {
+        const aoa = [];
+        aoa.push([sheet.dateText]);
+        aoa.push([sheet.matchup]);
+        aoa.push([]);
+        aoa.push(["Position", ...inningCols.map((n) => `Inning ${n}`)]);
+
+        POSITIONS.forEach((position) => {
+          const row = [position];
+          sheet.inningsData.forEach((inning) => row.push(inning.assignments[position] || ""));
+          aoa.push(row);
+        });
+
+        aoa.push([]);
+        aoa.push(["Notes"]);
+        aoa.push([`Source: ${sheet.summary}${sheet.location ? ` | ${sheet.location}` : ""}`]);
+        aoa.push([plan.requests || "No special requests entered."]);
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws["!cols"] = [{ wch: 16 }, ...Array.from({ length: plan.innings }, () => ({ wch: 15 }))];
+        ws["!merges"] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol - 1 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol - 1 } },
+          { s: { r: 10, c: 0 }, e: { r: 10, c: lastCol - 1 } },
+          { s: { r: 11, c: 0 }, e: { r: 11, c: lastCol - 1 } },
+          { s: { r: 12, c: 0 }, e: { r: 12, c: lastCol - 1 } },
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName);
+      });
+
+      const tracking = [];
+      tracking.push(["Player", ...POSITIONS, "Total Innings", "Times Benched"]);
+      plan.roster.forEach((player) => {
+        const stats = plan.playerStats[player];
+        tracking.push([
+          player,
+          ...POSITIONS.map((p) => stats.positions[p]),
+          stats.inningsPlayed,
+          stats.benchCount,
+        ]);
+      });
+      const tws = XLSX.utils.aoa_to_sheet(tracking);
+      tws["!cols"] = [
+        { wch: 18 },
+        ...Array.from({ length: POSITIONS.length }, () => ({ wch: 12 })),
+        { wch: 14 },
+        { wch: 14 },
+      ];
+      XLSX.utils.book_append_sheet(wb, tws, "Tracking");
+
+      const info = [
+        ["Team", plan.teamName],
+        ["Games", plan.sheets.length],
+        ["Players", plan.roster.length],
+        ["Innings Per Game", plan.innings],
+        ["Google Import", forGoogle ? "Upload this .xlsx to Google Sheets using File > Import > Upload" : "Open directly in Excel"],
+      ];
+      const iws = XLSX.utils.aoa_to_sheet(info);
+      iws["!cols"] = [{ wch: 18 }, { wch: 70 }];
+      XLSX.utils.book_append_sheet(wb, iws, "Info");
+
+      return wb;
+    }
+
+    function renderPreview(plan) {
+      const pills = document.getElementById("summaryPills");
+      pills.innerHTML = `
+        <div class="pill">Team: ${escapeHtml(plan.teamName)}</div>
+        <div class="pill">Games: ${plan.sheets.length}</div>
+        <div class="pill">Players: ${plan.roster.length}</div>
+        <div class="pill">Innings: ${plan.innings}</div>
+      `;
+
+      const firstSheet = plan.sheets[0];
+      let table = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line);">
+        <div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">${escapeHtml(firstSheet.dateText)}</h3><div class="small">${escapeHtml(firstSheet.matchup)}</div></div>
+        <div style="padding:14px;">
+        <table><thead><tr><th>Position</th>`;
+      for (let i = 1; i <= plan.innings; i += 1) table += `<th>Inning ${i}</th>`;
+      table += `</tr></thead><tbody>`;
+      POSITIONS.forEach((position) => {
+        table += `<tr><td>${escapeHtml(position)}</td>`;
+        firstSheet.inningsData.forEach((inning) => {
+          table += `<td>${escapeHtml(inning.assignments[position] || "")}</td>`;
+        });
+        table += `</tr>`;
+      });
+      table += `</tbody></table></div></div>`;
+
+      let tracking = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line); margin-top:14px;">
+        <div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">Tracking preview</h3></div>
+        <div style="padding:14px; overflow:auto;"><table><thead><tr><th>Player</th><th>Total Innings</th><th>Times Benched</th></tr></thead><tbody>`;
+      plan.roster.forEach((player) => {
+        const stats = plan.playerStats[player];
+        tracking += `<tr><td>${escapeHtml(player)}</td><td>${stats.inningsPlayed}</td><td>${stats.benchCount}</td></tr>`;
+      });
+      tracking += `</tbody></table></div></div>`;
+
+      document.getElementById("previewArea").innerHTML = table + tracking;
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    async function makePlan() {
+      setStatus("", "");
+      const icsLink = document.getElementById("icsLink").value.trim();
+      const teamOverride = document.getElementById("teamName").value.trim();
+      const roster = cleanLines(document.getElementById("roster").value);
+      const innings = Math.max(1, Number(document.getElementById("innings").value || 3));
+      const requests = document.getElementById("requests").value.trim();
+
+      if (!icsLink) throw new Error("Paste the TeamSnap games-only .ics link.");
+      if (!roster.length) throw new Error("Add at least one player to the roster.");
+
+      setStatus("success", "Loading TeamSnap schedule...");
+      const icsText = await fetchIcsText(icsLink);
+      const parsed = parseScheduleFromIcs(icsText, teamOverride);
+      if (!parsed.games.length) throw new Error("No games were found in that calendar feed.");
+
+      const plan = buildSeasonPlan(parsed.teamName, parsed.games, roster, innings, requests);
+      latestPlan = plan;
+      renderPreview(plan);
+      setStatus("success", `Loaded ${plan.sheets.length} games for ${plan.teamName}.`);
+      return plan;
+    }
+
+    async function handlePreview() {
+      try {
+        await makePlan();
+      } catch (err) {
+        setStatus("error", err.message || "Something went wrong.");
+      }
+    }
+
+    async function handleExport(forGoogle) {
+      try {
+        const plan = latestPlan || await makePlan();
+        const wb = buildWorkbook(plan, forGoogle);
+        const safe = plan.teamName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
+        const fileName = forGoogle ? `${safe}-google-sheets-import.xlsx` : `${safe}-lineups.xlsx`;
+        XLSX.writeFile(wb, fileName, { compression: true });
+        setStatus("success", forGoogle ? "Google Sheets import file created. In Google Sheets, use File > Import > Upload." : "Excel workbook created.");
+      } catch (err) {
+        setStatus("error", err.message || "Export failed.");
+      }
+    }
+
+    document.getElementById("previewBtn").addEventListener("click", handlePreview);
+    document.getElementById("excelBtn").addEventListener("click", () => handleExport(false));
+    document.getElementById("googleBtn").addEventListener("click", () => handleExport(true));
+  </script>
 </body>
 </html>
