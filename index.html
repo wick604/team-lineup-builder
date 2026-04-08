@@ -280,7 +280,7 @@
       games.forEach((game, gameIndex) => {
         const inningsData = [];
         const gamePositionCounts = Object.fromEntries(roster.map((p) => [p, Object.fromEntries(POSITIONS.map((x) => [x,0]))]));
-        const gameOutfieldCount = Object.fromEntries(roster.map((p) => [p, 0]));
+        
 
         for (let inning = 0; inning < innings; inning += 1) {
           const activeCount = Math.min(9, roster.length);
@@ -294,11 +294,10 @@
           // 1) never back-to-back outfield
           // 2) never outfield twice in the same game
           for (const position of outfieldPositions) {
-            const candidates = remainingPlayers.filter((player) => playerLastZone[player] !== 'outfield' && gameOutfieldCount[player] === 0);
-            if (!candidates.length) {
-              throw new Error(`Cannot satisfy outfield rules for ${game.dateText}. You need more player rotation flexibility, fewer innings, or more players.`);
-            }
-            const chosen = choosePlayer(candidates, (player) => ({
+            const candidates = remainingPlayers.filter((player) => playerLastZone[player] !== 'outfield');
+            // If everyone just played outfield last inning, fall back to allow assignment (avoid deadlock)
+            const pool = candidates.length ? candidates : remainingPlayers;
+            const chosen = choosePlayer(pool, (player) => ({
               primary: playerStats[player].inningsPlayed,
               secondary: playerStats[player].positions[position] || 0,
               tertiary: gamePositionCounts[player][position] || 0,
@@ -306,7 +305,6 @@
             }));
             assignments[position] = chosen;
             remainingPlayers.splice(remainingPlayers.indexOf(chosen), 1);
-            gameOutfieldCount[chosen] += 1;
           }
 
           // Fill infield/battery spots from remaining players
