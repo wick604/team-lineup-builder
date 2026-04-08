@@ -205,19 +205,44 @@
         return event;
       });
     }
-    function inferMatchup(summary, teamName) {
-      const cleanSummary = String(summary || "").trim();
-      const name = teamName || "Team";
-      let homeAway = /\baway\b|@/i.test(cleanSummary) ? "Away" : "Home";
-      let opponent = cleanSummary
-        .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
-        .replace(/^[-:@\s]+/, "")
-        .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
-        .replace(/^(vs\.?|@|at)\s*/i, "")
-        .trim();
-      if (!opponent) opponent = "Opponent";
-      return { homeAway, opponent, matchup: homeAway === "Away" ? `${name} @ ${opponent}` : `${name} vs ${opponent}` };
-    }
+function inferMatchup(summary, teamName) {
+  const cleanSummary = String(summary || "").trim();
+  const name = teamName || "Team";
+
+  let homeAway = "Home";
+
+  // Detect Away games more reliably
+  if (
+    /\baway\b/i.test(cleanSummary) ||
+    /\bat\b/i.test(cleanSummary) ||
+    /@/.test(cleanSummary)
+  ) {
+    homeAway = "Away";
+  }
+
+  // Detect Home explicitly
+  if (/\bhome\b/i.test(cleanSummary) || /\bvs\.?\b/i.test(cleanSummary)) {
+    homeAway = "Home";
+  }
+
+  let opponent = cleanSummary
+    .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
+    .replace(/^[-:@\s]+/, "")
+    .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
+    .replace(/^(vs\.?|@|at)\s*/i, "")
+    .trim();
+
+  if (!opponent) opponent = "Opponent";
+
+  return {
+    homeAway,
+    opponent,
+    matchup:
+      homeAway === "Away"
+        ? `${name} @ ${opponent}`
+        : `${name} vs ${opponent}`,
+  };
+}
     function parseScheduleFromIcs(icsText, teamNameOverride) {
       const calendarName = teamNameOverride || extractCalendarName(icsText) || "Team";
       const games = parseEvents(icsText)
