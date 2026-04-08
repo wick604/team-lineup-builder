@@ -221,17 +221,43 @@
   const name = teamName || "Team";
 
   let homeAway = "Home";
+  let opponent = cleanSummary;
 
-  // TeamSnap away examples: "Away at ...", "at ...", "@ ..."
-  if (/\baway\b/i.test(cleanSummary) || /^\s*at\b/i.test(cleanSummary) || /@\s*/.test(cleanSummary)) {
+  // TeamSnap-specific patterns first
+  if (/^Away at /i.test(cleanSummary)) {
     homeAway = "Away";
-  }
-
-  // TeamSnap home examples: "Home vs ...", "vs ..."
-  if (/\bhome\b/i.test(cleanSummary) || /\bvs\.?\b/i.test(cleanSummary)) {
+    opponent = cleanSummary.replace(/^Away at /i, "").trim();
+  } else if (/^Home vs\.?\s*/i.test(cleanSummary)) {
     homeAway = "Home";
+    opponent = cleanSummary.replace(/^Home vs\.?\s*/i, "").trim();
+  } else if (/^Away /i.test(cleanSummary)) {
+    homeAway = "Away";
+    opponent = cleanSummary.replace(/^Away /i, "").trim();
+  } else if (/^Home /i.test(cleanSummary)) {
+    homeAway = "Home";
+    opponent = cleanSummary.replace(/^Home /i, "").trim();
+  } else if (/@/.test(cleanSummary) || /^\s*at\b/i.test(cleanSummary)) {
+    homeAway = "Away";
+    opponent = cleanSummary.replace(/^.*?(?:@|at)\s*/i, "").trim();
+  } else if (/\bvs\.?/i.test(cleanSummary)) {
+    homeAway = "Home";
+    opponent = cleanSummary.replace(/^.*?\bvs\.?\s*/i, "").trim();
   }
 
+  opponent = opponent
+    .replace(new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "")
+    .trim();
+
+  if (!opponent) opponent = "Opponent";
+
+  return {
+    homeAway,
+    opponent,
+    matchup: homeAway === "Away"
+      ? `${name} @ ${opponent}`
+      : `${name} vs ${opponent}`
+  };
+}
   let opponent = cleanSummary
     .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
     .replace(/^[-:@\s]+/, "")
