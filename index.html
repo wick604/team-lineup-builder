@@ -255,31 +255,47 @@
     }
 
     function inferMatchup(summary, teamName) {
-      const cleanSummary = String(summary || "").trim();
-      const name = teamName || "Team";
+  const cleanSummary = String(summary || "").trim();
+  const name = teamName || "Team";
 
-      let homeAway = "Home";
-      let opponent = cleanSummary;
+  let homeAway = "Home";
+  let opponent = "Opponent";
 
-      if (/^Away at /i.test(cleanSummary)) {
-        homeAway = "Away";
-        opponent = cleanSummary.replace(/^Away at /i, "").trim();
-      } else if (/^Home vs\.?\s*/i.test(cleanSummary)) {
-        homeAway = "Home";
-        opponent = cleanSummary.replace(/^Home vs\.?\s*/i, "").trim();
-      } else if (/^Away /i.test(cleanSummary)) {
-        homeAway = "Away";
-        opponent = cleanSummary.replace(/^Away /i, "").trim();
-      } else if (/^Home /i.test(cleanSummary)) {
-        homeAway = "Home";
-        opponent = cleanSummary.replace(/^Home /i, "").trim();
-      } else if (/\b at \b/i.test(` ${cleanSummary} `) || /@/.test(cleanSummary)) {
-        homeAway = "Away";
-        opponent = cleanSummary.replace(/^.*?(?:@|at)\s*/i, "").trim();
-      } else if (/\bvs\.?\b/i.test(cleanSummary)) {
-        homeAway = "Home";
-        opponent = cleanSummary.replace(/^.*?\bvs\.?\s*/i, "").trim();
-      }
+  if (cleanSummary.startsWith("Away at ")) {
+    homeAway = "Away";
+    opponent = cleanSummary.replace("Away at ", "").trim();
+  } else if (cleanSummary.startsWith("Home vs. ")) {
+    homeAway = "Home";
+    opponent = cleanSummary.replace("Home vs. ", "").trim();
+  } else if (cleanSummary.startsWith("Home vs ")) {
+    homeAway = "Home";
+    opponent = cleanSummary.replace("Home vs ", "").trim();
+  } else {
+    // fallback only if TeamSnap gives a different format
+    if (/^Away\b/i.test(cleanSummary) || /@/.test(cleanSummary)) {
+      homeAway = "Away";
+    } else {
+      homeAway = "Home";
+    }
+
+    opponent = cleanSummary
+      .replace(/^Away at /i, "")
+      .replace(/^Home vs\.?\s*/i, "")
+      .replace(/^Away\s*/i, "")
+      .replace(/^Home\s*/i, "")
+      .trim();
+
+    if (!opponent) opponent = "Opponent";
+  }
+
+  return {
+    homeAway,
+    opponent,
+    matchup: homeAway === "Away"
+      ? `${name} @ ${opponent}`
+      : `${name} vs ${opponent}`
+  };
+}
 
       opponent = opponent
         .replace(new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "")
