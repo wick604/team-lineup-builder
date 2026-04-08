@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Team Lineup Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial; padding: 20px; background:#f8fafc; }
+    textarea, input { width:100%; padding:10px; margin-top:5px; }
+    button { margin-top:10px; padding:10px 15px; }
+    .box { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+  </style>
+</head>
+
+<body>
+
+<h2>Team Lineup Builder</h2>
+
+<div class="box">
+  <label>TeamSnap Games Link</label>
+  <input id="link" placeholder="Paste TeamSnap .ics link" />
+</div>
+
+<div class="box">
+  <label>Roster</label>
+  <textarea id="roster" rows="8" placeholder="One player per line"></textarea>
+</div>
+
+<div class="box">
+  <label>Innings</label>
+  <input id="innings" type="number" value="3"/>
+</div>
+
+<div class="box">
+  <button onclick="preview()">Preview Excel Data</button>
+</div>
+
+<pre id="output"></pre>
+
+<script>
+function preview() {
+  const roster = document.getElementById('roster').value.split("\n").filter(x=>x.trim());
+  const innings = parseInt(document.getElementById('innings').value) || 3;
+
+  const positions = [
+    "Pitcher","Catcher","1B","2B","3B","SS","LF","CF","RF"
+  ];
+
+  let rows = [];
+
+  rows.push(["Game 1"]);
+  rows.push(["Team vs Opponent"]);
+  rows.push([]);
+
+  let header = ["Position"];
+  for(let i=1;i<=innings;i++) header.push("Inning "+i);
+  rows.push(header);
+
+  positions.forEach((pos, i)=>{
+    let row=[pos];
+    for(let j=0;j<innings;j++){
+      row.push(roster[(i+j)%roster.length] || "");
+    }
+    rows.push(row);
+  });
+
+  document.getElementById("output").textContent =
+    JSON.stringify(rows, null, 2);
+}
+</script>
+
+</body>
+</html>
