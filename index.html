@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Team Lineup Builder</title>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -42,11 +42,7 @@
     }
     h1, h2, h3, p { margin-top: 0; }
     .sub { color: var(--muted); }
-    label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
+    label { display: block; font-weight: 700; margin-bottom: 8px; }
     input, textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -56,17 +52,9 @@
       background: white;
     }
     textarea { min-height: 180px; resize: vertical; }
-    .grid {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: 1fr 1fr;
-    }
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-    }
+    .grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+    .grid3 { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
     button {
       border: 0;
       border-radius: 10px;
@@ -76,15 +64,7 @@
       font: inherit;
       cursor: pointer;
     }
-    button.secondary {
-      background: white;
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
+    button.secondary { background: white; color: var(--text); border: 1px solid var(--line); }
     .note, .status {
       margin-top: 14px;
       border-radius: 12px;
@@ -92,68 +72,20 @@
       font-size: 14px;
       line-height: 1.45;
     }
-    .note {
-      background: var(--warn);
-      color: var(--warn-text);
-    }
-    .status.success {
-      background: var(--good);
-      color: var(--good-text);
-    }
-    .status.error {
-      background: #fef2f2;
-      color: #991b1b;
-    }
-    .pillrow {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-    .pill {
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-    th, td {
-      border: 1px solid var(--line);
-      padding: 7px 8px;
-      text-align: center;
-      vertical-align: top;
-    }
-    th {
-      background: var(--soft);
-    }
-    .preview-section {
-      margin-top: 14px;
-    }
-    .small {
-      font-size: 13px;
-      color: var(--muted);
-    }
-    pre {
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      overflow: auto;
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
+    .note { background: var(--warn); color: var(--warn-text); }
+    .status.success { background: var(--good); color: var(--good-text); }
+    .status.error { background: #fef2f2; color: #991b1b; }
+    .pillrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; color: var(--muted); }
+    .pill { background: var(--soft); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 7px 8px; text-align: center; vertical-align: top; }
+    th { background: var(--soft); }
+    .preview-section { margin-top: 14px; }
+    .small { font-size: 13px; color: var(--muted); }
+    .color-input { width: 72px; height: 46px; padding: 4px; }
     @media (max-width: 900px) {
       .wrap { grid-template-columns: 1fr; }
-      .grid { grid-template-columns: 1fr; }
+      .grid, .grid3 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -166,7 +98,7 @@
       <label for="icsLink">TeamSnap games-only .ics link</label>
       <input id="icsLink" placeholder="https://ical-cdn.teamsnap.com/team_schedule/filter/games/... .ics" />
 
-      <div class="grid" style="margin-top:14px;">
+      <div class="grid3" style="margin-top:14px;">
         <div>
           <label for="teamName">Team name override (optional)</label>
           <input id="teamName" placeholder="Leave blank to use the calendar name if available" />
@@ -174,6 +106,10 @@
         <div>
           <label for="innings">Innings per game</label>
           <input id="innings" type="number" min="1" max="20" value="3" />
+        </div>
+        <div>
+          <label for="teamColor">Team colour</label>
+          <input id="teamColor" class="color-input" type="color" value="#1f4e78" />
         </div>
       </div>
 
@@ -193,7 +129,7 @@
         <button id="googleBtn" class="secondary">Export for Google Sheets</button>
       </div>
 
-      <div class="note">This version now expects a small Vercel serverless function at <code>/api/fetch-ics</code> to fetch the TeamSnap calendar. Add that file in GitHub and redeploy.</div>
+      <div class="note">This version uses a Vercel serverless function at <code>/api/fetch-ics</code> to fetch the TeamSnap calendar. It also styles the workbook to match your sample more closely, including a selectable team colour.</div>
       <div id="status"></div>
     </div>
 
@@ -208,47 +144,21 @@
 
   <script>
     const POSITIONS = [
-      "Pitcher",
-      "Catcher",
-      "1st Base",
-      "2nd Base",
-      "3rd Base",
-      "Short Stop",
-      "Left Field",
-      "Center Field",
-      "Right Field",
+      "Pitcher","Catcher","1st Base","2nd Base","3rd Base","Short Stop","Left Field","Center Field","Right Field"
     ];
-
     let latestPlan = null;
 
     function setStatus(type, message) {
       const el = document.getElementById("status");
-      if (!message) {
-        el.innerHTML = "";
-        return;
-      }
-      el.innerHTML = `<div class="status ${type}">${message}</div>`;
+      el.innerHTML = message ? `<div class="status ${type}">${message}</div>` : "";
     }
-
     function cleanLines(text) {
-      return text
-        .split(/\r?\n/)
-        .map((x) => x.trim())
-        .filter(Boolean);
+      return text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     }
-
     function decodeIcsValue(value) {
-      return String(value || "")
-        .replace(/\\,/g, ",")
-        .replace(/\\;/g, ";")
-        .replace(/\\n/g, " ")
-        .trim();
+      return String(value || "").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\n/g, " ").trim();
     }
-
-    function unfoldIcs(text) {
-      return text.replace(/\r?\n[ \t]/g, "");
-    }
-
+    function unfoldIcs(text) { return text.replace(/\r?\n[ \t]/g, ""); }
     async function fetchIcsText(url) {
       const response = await fetch(`/api/fetch-ics?url=${encodeURIComponent(url)}`);
       if (!response.ok) {
@@ -257,185 +167,110 @@
       }
       return await response.text();
     }
-
     function parseIcsDate(raw) {
       const value = String(raw || "").trim();
       if (!value) return null;
-
-      if (/^\d{8}$/.test(value)) {
-        const y = Number(value.slice(0, 4));
-        const m = Number(value.slice(4, 6)) - 1;
-        const d = Number(value.slice(6, 8));
-        return new Date(y, m, d);
-      }
-
+      if (/^\d{8}$/.test(value)) return new Date(Number(value.slice(0,4)), Number(value.slice(4,6))-1, Number(value.slice(6,8)));
       const compact = value.replace("Z", "");
       if (/^\d{8}T\d{6}$/.test(compact)) {
-        const y = Number(compact.slice(0, 4));
-        const m = Number(compact.slice(4, 6)) - 1;
-        const d = Number(compact.slice(6, 8));
-        const hh = Number(compact.slice(9, 11));
-        const mm = Number(compact.slice(11, 13));
-        const ss = Number(compact.slice(13, 15));
-        return new Date(y, m, d, hh, mm, ss);
+        return new Date(Number(compact.slice(0,4)), Number(compact.slice(4,6))-1, Number(compact.slice(6,8)), Number(compact.slice(9,11)), Number(compact.slice(11,13)), Number(compact.slice(13,15)));
       }
-
       const fallback = new Date(value);
       return Number.isNaN(fallback.getTime()) ? null : fallback;
     }
-
     function formatDateShort(date) {
       return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
     }
-
     function formatTabDate(date) {
-      const month = date.toLocaleDateString(undefined, { month: "short" });
-      const day = date.getDate();
-      return `${month} ${String(day).padStart(2, "0")}`;
+      return `${date.toLocaleDateString(undefined, { month: "short" })} ${String(date.getDate()).padStart(2, "0")}`;
     }
-
     function extractCalendarName(icsText) {
-      const unfolded = unfoldIcs(icsText);
-      const line = unfolded.match(/^X-WR-CALNAME:(.*)$/m);
-      if (line) return decodeIcsValue(line[1]);
-      return "";
+      const line = unfoldIcs(icsText).match(/^X-WR-CALNAME:(.*)$/m);
+      return line ? decodeIcsValue(line[1]) : "";
     }
-
     function parseEvents(icsText) {
       const unfolded = unfoldIcs(icsText);
-      const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
-      const events = [];
-
-      for (const block of blocks) {
+      return unfolded.split("BEGIN:VEVENT").slice(1).map((block) => {
         const event = {};
-        const lines = block.split(/\r?\n/);
-        for (const line of lines) {
-          if (!line || line === "END:VEVENT") continue;
+        block.split(/\r?\n/).forEach((line) => {
+          if (!line || line === "END:VEVENT") return;
           const idx = line.indexOf(":");
-          if (idx === -1) continue;
+          if (idx === -1) return;
           const left = line.slice(0, idx);
           const value = line.slice(idx + 1);
           const key = left.split(";")[0];
           event[key] = decodeIcsValue(value);
           if (key === "DTSTART") event.__dtstartRaw = value;
-          if (key === "DTEND") event.__dtendRaw = value;
-        }
-        events.push(event);
-      }
-
-      return events;
+        });
+        return event;
+      });
     }
-
     function inferMatchup(summary, teamName) {
       const cleanSummary = String(summary || "").trim();
       const name = teamName || "Team";
-      const normalized = cleanSummary.replace(/\s+/g, " ");
-      let homeAway = "Game";
-      let opponent = normalized || "Opponent";
-
-      if (/\baway\b/i.test(normalized) || /@/.test(normalized)) {
-        homeAway = "Away";
-      } else if (/\bhome\b/i.test(normalized) || /\bvs\b|\bvs\.\b/i.test(normalized)) {
-        homeAway = "Home";
-      }
-
-      opponent = opponent
+      let homeAway = /\baway\b|@/i.test(cleanSummary) ? "Away" : "Home";
+      let opponent = cleanSummary
         .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
         .replace(/^[-:@\s]+/, "")
         .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
         .replace(/^(vs\.?|@|at)\s*/i, "")
         .trim();
-
       if (!opponent) opponent = "Opponent";
-      const matchup = homeAway === "Away" ? `${name} @ ${opponent}` : `${name} vs ${opponent}`;
-      return { homeAway, opponent, matchup };
+      return { homeAway, opponent, matchup: homeAway === "Away" ? `${name} @ ${opponent}` : `${name} vs ${opponent}` };
     }
-
     function parseScheduleFromIcs(icsText, teamNameOverride) {
       const calendarName = teamNameOverride || extractCalendarName(icsText) || "Team";
-      const events = parseEvents(icsText)
+      const games = parseEvents(icsText)
         .map((event) => {
-          const date = parseIcsDate(event.__dtstartRaw || event.DTSTART);
-          if (!date) return null;
-          const inferred = inferMatchup(event.SUMMARY || "", calendarName);
-          return {
-            dateObj: date,
-            dateText: formatDateShort(date),
-            tabDate: formatTabDate(date),
-            summary: event.SUMMARY || "Game",
-            location: event.LOCATION || "",
-            ...inferred,
-          };
+          const dateObj = parseIcsDate(event.__dtstartRaw || event.DTSTART);
+          if (!dateObj) return null;
+          const meta = inferMatchup(event.SUMMARY || "", calendarName);
+          return { dateObj, dateText: formatDateShort(dateObj), tabDate: formatTabDate(dateObj), summary: event.SUMMARY || "Game", location: event.LOCATION || "", ...meta };
         })
         .filter(Boolean)
-        .sort((a, b) => a.dateObj - b.dateObj);
-
-      return { teamName: calendarName, games: events };
+        .sort((a,b) => a.dateObj - b.dateObj);
+      return { teamName: calendarName, games };
     }
-
     function uniqueSheetName(base, used) {
-      let name = String(base || "Sheet").slice(0, 31);
-      let i = 2;
+      let name = String(base || "Sheet").slice(0,31), i = 2;
       while (used.has(name)) {
         const suffix = ` ${i}`;
-        name = String(base || "Sheet").slice(0, 31 - suffix.length) + suffix;
+        name = String(base || "Sheet").slice(0,31-suffix.length) + suffix;
         i += 1;
       }
       used.add(name);
       return name;
     }
-
-    function buildSeasonPlan(teamName, games, roster, innings, requests) {
-      const playerStats = {};
-      roster.forEach((player) => {
-        playerStats[player] = {
-          inningsPlayed: 0,
-          benchCount: 0,
-          positions: Object.fromEntries(POSITIONS.map((p) => [p, 0])),
-        };
-      });
-
+    function buildSeasonPlan(teamName, games, roster, innings, requests, teamColor) {
+      const playerStats = Object.fromEntries(roster.map((p) => [p, { inningsPlayed:0, benchCount:0, positions:Object.fromEntries(POSITIONS.map((x) => [x,0])) }]));
       const usedSheetNames = new Set();
       const sheets = [];
       let activeOffset = 0;
       let positionOffset = 0;
-
       games.forEach((game, gameIndex) => {
         const inningsData = [];
         for (let inning = 0; inning < innings; inning += 1) {
           const activeCount = Math.min(9, roster.length);
           const activePlayers = [];
-          for (let i = 0; i < activeCount; i += 1) {
-            activePlayers.push(roster[(activeOffset + i) % roster.length]);
-          }
+          for (let i = 0; i < activeCount; i += 1) activePlayers.push(roster[(activeOffset + i) % roster.length]);
           const benchPlayers = roster.filter((p) => !activePlayers.includes(p));
-
           const assignments = {};
           POSITIONS.forEach((position, posIndex) => {
-            if (posIndex < activePlayers.length) {
-              const player = activePlayers[(posIndex + positionOffset) % activePlayers.length];
-              assignments[position] = player;
+            const player = activePlayers.length ? activePlayers[(posIndex + positionOffset) % activePlayers.length] : "";
+            assignments[position] = player;
+            if (player) {
               playerStats[player].inningsPlayed += 1;
               playerStats[player].positions[position] += 1;
-            } else {
-              assignments[position] = "";
             }
           });
-
-          benchPlayers.forEach((player) => {
-            playerStats[player].benchCount += 1;
-          });
-
+          benchPlayers.forEach((player) => playerStats[player].benchCount += 1);
           inningsData.push({ assignments, benchPlayers });
           activeOffset = (activeOffset + 9) % roster.length;
           positionOffset = (positionOffset + 1) % Math.max(1, activePlayers.length);
         }
-
-        const homeAwayLabel = game.homeAway === "Away" ? "Away" : "Home";
-        const sheetName = uniqueSheetName(`${game.tabDate} - ${homeAwayLabel}`, usedSheetNames);
         sheets.push({
           gameIndex,
-          sheetName,
+          sheetName: uniqueSheetName(`${game.tabDate} - ${game.homeAway}`, usedSheetNames),
           dateText: game.dateText,
           matchup: game.matchup,
           summary: game.summary,
@@ -443,173 +278,210 @@
           inningsData,
         });
       });
-
-      return { teamName, roster, innings, requests, sheets, playerStats };
+      return { teamName, roster, innings, requests, teamColor, sheets, playerStats };
     }
-
+    function hexToRgbParts(hex) {
+      const clean = hex.replace('#','');
+      return { r: parseInt(clean.slice(0,2),16), g: parseInt(clean.slice(2,4),16), b: parseInt(clean.slice(4,6),16) };
+    }
+    function lighten(hex, factor) {
+      const {r,g,b} = hexToRgbParts(hex);
+      const mix = (v) => Math.round(v + (255-v)*factor).toString(16).padStart(2,'0').toUpperCase();
+      return `${mix(r)}${mix(g)}${mix(b)}`;
+    }
+    function baseStyle(color) {
+      return {
+        font: { name: 'Arial', sz: 11, color: { rgb: '000000' } },
+        alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+        border: {
+          left: { style: 'thin', color: { rgb: 'B7C9D6' } },
+          right: { style: 'thin', color: { rgb: 'B7C9D6' } },
+          top: { style: 'thin', color: { rgb: 'B7C9D6' } },
+          bottom: { style: 'thin', color: { rgb: 'B7C9D6' } },
+        }
+      };
+    }
     function buildWorkbook(plan, forGoogle) {
       const wb = XLSX.utils.book_new();
-      const inningCols = Array.from({ length: plan.innings }, (_, i) => i + 1);
-      const lastCol = 1 + plan.innings;
-      const lastColLetter = XLSX.utils.encode_col(lastCol - 1);
+      const teamHex = (plan.teamColor || '#1f4e78').replace('#','').toUpperCase();
+      const lightHex = lighten(plan.teamColor || '#1f4e78', 0.85);
+      const grayHex = 'EDEDED';
 
       plan.sheets.forEach((sheet) => {
         const aoa = [];
         aoa.push([sheet.dateText]);
         aoa.push([sheet.matchup]);
         aoa.push([]);
-        aoa.push(["Position", ...inningCols.map((n) => `Inning ${n}`)]);
-
+        aoa.push(['Position', ...Array.from({ length: plan.innings }, (_, i) => `Inning ${i+1}`)]);
         POSITIONS.forEach((position) => {
-          const row = [position];
-          sheet.inningsData.forEach((inning) => row.push(inning.assignments[position] || ""));
-          aoa.push(row);
+          aoa.push([position, ...sheet.inningsData.map((inning) => inning.assignments[position] || '')]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{ wch: 18 }, ...Array.from({ length: plan.innings }, () => ({ wch: 13 }))];
+        ws['!rows'] = [ { hpt: 24 }, { hpt: 22 }, { hpt: 8 }, { hpt: 22 }, ...Array.from({ length: 9 }, () => ({ hpt: 24 })) ];
+        ws['!merges'] = [
+          { s: { r:0, c:0 }, e: { r:0, c: plan.innings } },
+          { s: { r:1, c:0 }, e: { r:1, c: plan.innings } },
+        ];
+
+        for (let c = 0; c <= plan.innings; c += 1) {
+          const cell = XLSX.utils.encode_cell({ r: 3, c });
+          ws[cell].s = {
+            ...baseStyle(teamHex),
+            font: { name: 'Arial', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { patternType: 'solid', fgColor: { rgb: teamHex } },
+            border: {
+              left: { style: 'thin', color: { rgb: teamHex } },
+              right: { style: 'thin', color: { rgb: teamHex } },
+              top: { style: 'medium', color: { rgb: teamHex } },
+              bottom: { style: 'medium', color: { rgb: teamHex } },
+            }
+          };
+        }
+
+        for (let r = 4; r <= 12; r += 1) {
+          const labelCell = XLSX.utils.encode_cell({ r, c: 0 });
+          ws[labelCell].s = {
+            ...baseStyle(teamHex),
+            font: { name: 'Arial', sz: 11, bold: true },
+            fill: { patternType: 'solid', fgColor: { rgb: grayHex } },
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true }
+          };
+          for (let c = 1; c <= plan.innings; c += 1) {
+            const cell = XLSX.utils.encode_cell({ r, c });
+            if (!ws[cell]) ws[cell] = { t: 's', v: '' };
+            ws[cell].s = baseStyle(teamHex);
+          }
+        }
+
+        ['A1','A2'].forEach((addr, idx) => {
+          ws[addr].s = {
+            ...baseStyle(teamHex),
+            font: { name: 'Arial', sz: idx === 0 ? 14 : 11, bold: true, color: { rgb: idx === 0 ? 'FFFFFF' : '000000' } },
+            fill: { patternType: 'solid', fgColor: { rgb: idx === 0 ? teamHex : lightHex } },
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            border: {
+              left: { style: 'thin', color: { rgb: teamHex } },
+              right: { style: 'thin', color: { rgb: teamHex } },
+              top: { style: 'thin', color: { rgb: teamHex } },
+              bottom: { style: 'thin', color: { rgb: teamHex } },
+            }
+          };
         });
 
-        aoa.push([]);
-        aoa.push(["Notes"]);
-        aoa.push([`Source: ${sheet.summary}${sheet.location ? ` | ${sheet.location}` : ""}`]);
-        aoa.push([plan.requests || "No special requests entered."]);
-
-        const ws = XLSX.utils.aoa_to_sheet(aoa);
-        ws["!cols"] = [{ wch: 16 }, ...Array.from({ length: plan.innings }, () => ({ wch: 15 }))];
-        ws["!merges"] = [
-          { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol - 1 } },
-          { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol - 1 } },
-          { s: { r: 10, c: 0 }, e: { r: 10, c: lastCol - 1 } },
-          { s: { r: 11, c: 0 }, e: { r: 11, c: lastCol - 1 } },
-          { s: { r: 12, c: 0 }, e: { r: 12, c: lastCol - 1 } },
-        ];
         XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName);
       });
 
-      const tracking = [];
-      tracking.push(["Player", ...POSITIONS, "Total Innings", "Times Benched"]);
+      const tracking = [['Player', ...POSITIONS, 'Total Innings', 'Times Benched']];
       plan.roster.forEach((player) => {
         const stats = plan.playerStats[player];
-        tracking.push([
-          player,
-          ...POSITIONS.map((p) => stats.positions[p]),
-          stats.inningsPlayed,
-          stats.benchCount,
-        ]);
+        tracking.push([player, ...POSITIONS.map((p) => stats.positions[p]), stats.inningsPlayed, stats.benchCount]);
       });
       const tws = XLSX.utils.aoa_to_sheet(tracking);
-      tws["!cols"] = [
-        { wch: 18 },
-        ...Array.from({ length: POSITIONS.length }, () => ({ wch: 12 })),
-        { wch: 14 },
-        { wch: 14 },
-      ];
-      XLSX.utils.book_append_sheet(wb, tws, "Tracking");
+      tws['!cols'] = [{ wch: 18 }, ...Array.from({ length: POSITIONS.length }, () => ({ wch: 12 })), { wch: 14 }, { wch: 14 }];
+      for (let c = 0; c < tracking[0].length; c += 1) {
+        const cell = XLSX.utils.encode_cell({ r:0, c });
+        tws[cell].s = {
+          ...baseStyle(teamHex),
+          font: { name:'Arial', sz:11, bold:true, color:{ rgb:'FFFFFF' } },
+          fill: { patternType:'solid', fgColor:{ rgb: teamHex } }
+        };
+      }
+      for (let r = 1; r < tracking.length; r += 1) {
+        for (let c = 0; c < tracking[0].length; c += 1) {
+          const cell = XLSX.utils.encode_cell({ r, c });
+          tws[cell].s = c === 0
+            ? { ...baseStyle(teamHex), font: { name:'Arial', sz:11, bold:true }, fill: { patternType:'solid', fgColor:{ rgb: grayHex } }, alignment:{ vertical:'center', horizontal:'left' } }
+            : baseStyle(teamHex);
+        }
+      }
+      XLSX.utils.book_append_sheet(wb, tws, 'Tracking');
 
       const info = [
-        ["Team", plan.teamName],
-        ["Games", plan.sheets.length],
-        ["Players", plan.roster.length],
-        ["Innings Per Game", plan.innings],
-        ["Google Import", forGoogle ? "Upload this .xlsx to Google Sheets using File > Import > Upload" : "Open directly in Excel"],
+        ['Team', plan.teamName],
+        ['Games', plan.sheets.length],
+        ['Players', plan.roster.length],
+        ['Innings Per Game', plan.innings],
+        ['Special Requests', plan.requests || ''],
+        ['Google Import', forGoogle ? 'Upload this .xlsx to Google Sheets using File > Import > Upload' : 'Open directly in Excel'],
       ];
       const iws = XLSX.utils.aoa_to_sheet(info);
-      iws["!cols"] = [{ wch: 18 }, { wch: 70 }];
-      XLSX.utils.book_append_sheet(wb, iws, "Info");
-
+      iws['!cols'] = [{ wch: 18 }, { wch: 72 }];
+      for (let r = 0; r < info.length; r += 1) {
+        const a = `A${r+1}`, b = `B${r+1}`;
+        iws[a].s = { ...baseStyle(teamHex), font:{ name:'Arial', sz:11, bold:true }, fill:{ patternType:'solid', fgColor:{ rgb: grayHex } }, alignment:{ vertical:'center', horizontal:'left' } };
+        iws[b].s = baseStyle(teamHex);
+      }
+      XLSX.utils.book_append_sheet(wb, iws, 'Info');
       return wb;
     }
-
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
     function renderPreview(plan) {
-      const pills = document.getElementById("summaryPills");
-      pills.innerHTML = `
+      document.getElementById('summaryPills').innerHTML = `
         <div class="pill">Team: ${escapeHtml(plan.teamName)}</div>
         <div class="pill">Games: ${plan.sheets.length}</div>
         <div class="pill">Players: ${plan.roster.length}</div>
-        <div class="pill">Innings: ${plan.innings}</div>
-      `;
-
+        <div class="pill">Innings: ${plan.innings}</div>`;
       const firstSheet = plan.sheets[0];
-      let table = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line);">
+      let html = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line);">
         <div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">${escapeHtml(firstSheet.dateText)}</h3><div class="small">${escapeHtml(firstSheet.matchup)}</div></div>
-        <div style="padding:14px;">
-        <table><thead><tr><th>Position</th>`;
-      for (let i = 1; i <= plan.innings; i += 1) table += `<th>Inning ${i}</th>`;
-      table += `</tr></thead><tbody>`;
+        <div style="padding:14px;"><table><thead><tr><th>Position</th>`;
+      for (let i = 1; i <= plan.innings; i += 1) html += `<th>Inning ${i}</th>`;
+      html += `</tr></thead><tbody>`;
       POSITIONS.forEach((position) => {
-        table += `<tr><td>${escapeHtml(position)}</td>`;
-        firstSheet.inningsData.forEach((inning) => {
-          table += `<td>${escapeHtml(inning.assignments[position] || "")}</td>`;
-        });
-        table += `</tr>`;
+        html += `<tr><td>${escapeHtml(position)}</td>`;
+        firstSheet.inningsData.forEach((inning) => { html += `<td>${escapeHtml(inning.assignments[position] || '')}</td>`; });
+        html += `</tr>`;
       });
-      table += `</tbody></table></div></div>`;
-
-      let tracking = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line); margin-top:14px;">
-        <div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">Tracking preview</h3></div>
-        <div style="padding:14px; overflow:auto;"><table><thead><tr><th>Player</th><th>Total Innings</th><th>Times Benched</th></tr></thead><tbody>`;
+      html += `</tbody></table></div></div>`;
+      html += `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line); margin-top:14px;"><div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">Tracking preview</h3></div><div style="padding:14px; overflow:auto;"><table><thead><tr><th>Player</th><th>Total Innings</th><th>Times Benched</th></tr></thead><tbody>`;
       plan.roster.forEach((player) => {
         const stats = plan.playerStats[player];
-        tracking += `<tr><td>${escapeHtml(player)}</td><td>${stats.inningsPlayed}</td><td>${stats.benchCount}</td></tr>`;
+        html += `<tr><td>${escapeHtml(player)}</td><td>${stats.inningsPlayed}</td><td>${stats.benchCount}</td></tr>`;
       });
-      tracking += `</tbody></table></div></div>`;
-
-      document.getElementById("previewArea").innerHTML = table + tracking;
+      html += `</tbody></table></div></div>`;
+      document.getElementById('previewArea').innerHTML = html;
     }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
     async function makePlan() {
-      setStatus("", "");
-      const icsLink = document.getElementById("icsLink").value.trim();
-      const teamOverride = document.getElementById("teamName").value.trim();
-      const roster = cleanLines(document.getElementById("roster").value);
-      const innings = Math.max(1, Number(document.getElementById("innings").value || 3));
-      const requests = document.getElementById("requests").value.trim();
-
-      if (!icsLink) throw new Error("Paste the TeamSnap games-only .ics link.");
-      if (!roster.length) throw new Error("Add at least one player to the roster.");
-
-      setStatus("success", "Loading TeamSnap schedule...");
+      setStatus('', '');
+      const icsLink = document.getElementById('icsLink').value.trim();
+      const teamOverride = document.getElementById('teamName').value.trim();
+      const roster = cleanLines(document.getElementById('roster').value);
+      const innings = Math.max(1, Number(document.getElementById('innings').value || 3));
+      const requests = document.getElementById('requests').value.trim();
+      const teamColor = document.getElementById('teamColor').value;
+      if (!icsLink) throw new Error('Paste the TeamSnap games-only .ics link.');
+      if (!roster.length) throw new Error('Add at least one player to the roster.');
+      setStatus('success', 'Loading TeamSnap schedule...');
       const icsText = await fetchIcsText(icsLink);
       const parsed = parseScheduleFromIcs(icsText, teamOverride);
-      if (!parsed.games.length) throw new Error("No games were found in that calendar feed.");
-
-      const plan = buildSeasonPlan(parsed.teamName, parsed.games, roster, innings, requests);
+      if (!parsed.games.length) throw new Error('No games were found in that calendar feed.');
+      const plan = buildSeasonPlan(parsed.teamName, parsed.games, roster, innings, requests, teamColor);
       latestPlan = plan;
       renderPreview(plan);
-      setStatus("success", `Loaded ${plan.sheets.length} games for ${plan.teamName}.`);
+      setStatus('success', `Loaded ${plan.sheets.length} games for ${plan.teamName}.`);
       return plan;
     }
-
     async function handlePreview() {
-      try {
-        await makePlan();
-      } catch (err) {
-        setStatus("error", err.message || "Something went wrong.");
-      }
+      try { await makePlan(); } catch (err) { setStatus('error', err.message || 'Something went wrong.'); }
     }
-
     async function handleExport(forGoogle) {
       try {
         const plan = latestPlan || await makePlan();
         const wb = buildWorkbook(plan, forGoogle);
-        const safe = plan.teamName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
+        const safe = plan.teamName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'team';
         const fileName = forGoogle ? `${safe}-google-sheets-import.xlsx` : `${safe}-lineups.xlsx`;
         XLSX.writeFile(wb, fileName, { compression: true });
-        setStatus("success", forGoogle ? "Google Sheets import file created. In Google Sheets, use File > Import > Upload." : "Excel workbook created.");
+        setStatus('success', forGoogle ? 'Google Sheets import file created. In Google Sheets, use File > Import > Upload.' : 'Excel workbook created.');
       } catch (err) {
-        setStatus("error", err.message || "Export failed.");
+        setStatus('error', err.message || 'Export failed.');
       }
     }
-
-    document.getElementById("previewBtn").addEventListener("click", handlePreview);
-    document.getElementById("excelBtn").addEventListener("click", () => handleExport(false));
-    document.getElementById("googleBtn").addEventListener("click", () => handleExport(true));
+    document.getElementById('previewBtn').addEventListener('click', handlePreview);
+    document.getElementById('excelBtn').addEventListener('click', () => handleExport(false));
+    document.getElementById('googleBtn').addEventListener('click', () => handleExport(true));
   </script>
 </body>
 </html>
