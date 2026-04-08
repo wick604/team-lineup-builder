@@ -193,7 +193,7 @@
         <button id="googleBtn" class="secondary">Export for Google Sheets</button>
       </div>
 
-      <div class="note">This version tries to fetch the calendar directly and then via a public proxy. If the TeamSnap feed or the proxy blocks access, the next step is a tiny Vercel serverless function.</div>
+      <div class="note">This version now expects a small Vercel serverless function at <code>/api/fetch-ics</code> to fetch the TeamSnap calendar. Add that file in GitHub and redeploy.</div>
       <div id="status"></div>
     </div>
 
@@ -250,11 +250,12 @@
     }
 
     async function fetchIcsText(url) {
-      const direct = await fetch(url);
-      if (direct.ok) return await direct.text();
-      const proxy = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-      if (proxy.ok) return await proxy.text();
-      throw new Error("Could not fetch the TeamSnap calendar link.");
+      const response = await fetch(`/api/fetch-ics?url=${encodeURIComponent(url)}`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Could not fetch the TeamSnap calendar link.");
+      }
+      return await response.text();
     }
 
     function parseIcsDate(raw) {
