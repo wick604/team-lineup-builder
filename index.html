@@ -113,6 +113,17 @@
         </div>
       </div>
 
+      <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <label style="display:flex; align-items:center; gap:8px; margin:0; font-weight:600;">
+          <input id="avoidBackToBackOutfield" type="checkbox" checked style="width:auto;" />
+          Avoid back-to-back outfield innings
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; margin:0; font-weight:600;">
+          <input id="avoidRepeatFieldSameGame" type="checkbox" style="width:auto;" />
+          Avoid repeating the same field position in one game when possible
+        </label>
+      </div>
+
       <div style="margin-top:14px;">
         <label for="roster">Roster (one player per line)</label>
         <textarea id="roster" placeholder="Player 1&#10;Player 2&#10;Player 3&#10;Player 4&#10;Player 5&#10;Player 6&#10;Player 7&#10;Player 8&#10;Player 9"></textarea>
@@ -205,44 +216,19 @@
         return event;
       });
     }
-function inferMatchup(summary, teamName) {
-  const cleanSummary = String(summary || "").trim();
-  const name = teamName || "Team";
-
-  let homeAway = "Home";
-
-  // Detect Away games more reliably
-  if (
-    /\baway\b/i.test(cleanSummary) ||
-    /\bat\b/i.test(cleanSummary) ||
-    /@/.test(cleanSummary)
-  ) {
-    homeAway = "Away";
-  }
-
-  // Detect Home explicitly
-  if (/\bhome\b/i.test(cleanSummary) || /\bvs\.?\b/i.test(cleanSummary)) {
-    homeAway = "Home";
-  }
-
-  let opponent = cleanSummary
-    .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
-    .replace(/^[-:@\s]+/, "")
-    .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
-    .replace(/^(vs\.?|@|at)\s*/i, "")
-    .trim();
-
-  if (!opponent) opponent = "Opponent";
-
-  return {
-    homeAway,
-    opponent,
-    matchup:
-      homeAway === "Away"
-        ? `${name} @ ${opponent}`
-        : `${name} vs ${opponent}`,
-  };
-}
+    function inferMatchup(summary, teamName) {
+      const cleanSummary = String(summary || "").trim();
+      const name = teamName || "Team";
+      let homeAway = /\baway\b|@/i.test(cleanSummary) ? "Away" : "Home";
+      let opponent = cleanSummary
+        .replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), "")
+        .replace(/^[-:@\s]+/, "")
+        .replace(/^(home|away)\s*(vs\.?|@|at)?\s*/i, "")
+        .replace(/^(vs\.?|@|at)\s*/i, "")
+        .trim();
+      if (!opponent) opponent = "Opponent";
+      return { homeAway, opponent, matchup: homeAway === "Away" ? `${name} @ ${opponent}` : `${name} vs ${opponent}` };
+    }
     function parseScheduleFromIcs(icsText, teamNameOverride) {
       const calendarName = teamNameOverride || extractCalendarName(icsText) || "Team";
       const games = parseEvents(icsText)
@@ -266,33 +252,91 @@ function inferMatchup(summary, teamName) {
       used.add(name);
       return name;
     }
-    function buildSeasonPlan(teamName, games, roster, innings, requests, teamColor) {
+    function buildSeasonPlan(teamName, games, roster, innings, requests, teamColor, options) {
       const playerStats = Object.fromEntries(roster.map((p) => [p, { inningsPlayed:0, benchCount:0, positions:Object.fromEntries(POSITIONS.map((x) => [x,0])) }]));
       const usedSheetNames = new Set();
       const sheets = [];
       let activeOffset = 0;
       let positionOffset = 0;
+      const outfieldPositions = new Set(['Left Field', 'Center Field', 'Right Field']);
+      const playerLastZone = Object.fromEntries(roster.map((p) => [p, '']));
+
+      function zoneForPosition(position) {
+        return outfieldPositions.has(position) ? 'outfield' : 'infield';
+      }
+
+      function buildAssignmentsForInning(activePlayers, gamePositionCounts) {
+        const assignments = {};
+        const remainingPlayers = [...activePlayers];
+        const rotatedPositions = POSITIONS.map((_, i) => POSITIONS[(i + positionOffset) % POSITIONS.length]);
+
+        rotatedPositions.forEach((position) => {
+          if (!remainingPlayers.length) {
+            assignments[position] = '';
+            return;
+          }
+
+          const preferred = remainingPlayers
+            .map((player, idx) => ({ player, idx }))
+            .sort((a, b) => {
+              const aRepeatZone = options.avoidBackToBackOutfield && zoneForPosition(position) === 'outfield' && playerLastZone[a.player] === 'outfield' ? 1 : 0;
+              const bRepeatZone = options.avoidBackToBackOutfield && zoneForPosition(position) === 'outfield' && playerLastZone[b.player] === 'outfield' ? 1 : 0;
+              if (aRepeatZone !== bRepeatZone) return aRepeatZone - bRepeatZone;
+
+              const aRepeatPosition = options.avoidRepeatFieldSameGame && (gamePositionCounts[a.player][position] || 0) > 0 ? 1 : 0;
+              const bRepeatPosition = options.avoidRepeatFieldSameGame && (gamePositionCounts[b.player][position] || 0) > 0 ? 1 : 0;
+              if (aRepeatPosition !== bRepeatPosition) return aRepeatPosition - bRepeatPosition;
+
+              const aTotalAtPosition = playerStats[a.player].positions[position] || 0;
+              const bTotalAtPosition = playerStats[b.player].positions[position] || 0;
+              if (aTotalAtPosition !== bTotalAtPosition) return aTotalAtPosition - bTotalAtPosition;
+
+              const aTotalInnings = playerStats[a.player].inningsPlayed || 0;
+              const bTotalInnings = playerStats[b.player].inningsPlayed || 0;
+              if (aTotalInnings !== bTotalInnings) return aTotalInnings - bTotalInnings;
+
+              return a.idx - b.idx;
+            });
+
+          const chosen = preferred[0].player;
+          assignments[position] = chosen;
+          remainingPlayers.splice(remainingPlayers.indexOf(chosen), 1);
+        });
+
+        return assignments;
+      }
+
       games.forEach((game, gameIndex) => {
         const inningsData = [];
+        const gamePositionCounts = Object.fromEntries(roster.map((p) => [p, Object.fromEntries(POSITIONS.map((x) => [x, 0]))]));
+
         for (let inning = 0; inning < innings; inning += 1) {
           const activeCount = Math.min(9, roster.length);
           const activePlayers = [];
           for (let i = 0; i < activeCount; i += 1) activePlayers.push(roster[(activeOffset + i) % roster.length]);
           const benchPlayers = roster.filter((p) => !activePlayers.includes(p));
-          const assignments = {};
-          POSITIONS.forEach((position, posIndex) => {
-            const player = activePlayers.length ? activePlayers[(posIndex + positionOffset) % activePlayers.length] : "";
-            assignments[position] = player;
+          const assignments = buildAssignmentsForInning(activePlayers, gamePositionCounts);
+
+          POSITIONS.forEach((position) => {
+            const player = assignments[position] || '';
             if (player) {
               playerStats[player].inningsPlayed += 1;
               playerStats[player].positions[position] += 1;
+              gamePositionCounts[player][position] += 1;
+              playerLastZone[player] = zoneForPosition(position);
             }
           });
-          benchPlayers.forEach((player) => playerStats[player].benchCount += 1);
+
+          benchPlayers.forEach((player) => {
+            playerStats[player].benchCount += 1;
+            playerLastZone[player] = 'bench';
+          });
+
           inningsData.push({ assignments, benchPlayers });
           activeOffset = (activeOffset + 9) % roster.length;
           positionOffset = (positionOffset + 1) % Math.max(1, activePlayers.length);
         }
+
         sheets.push({
           gameIndex,
           sheetName: uniqueSheetName(`${game.tabDate} - ${game.homeAway}`, usedSheetNames),
@@ -303,7 +347,8 @@ function inferMatchup(summary, teamName) {
           inningsData,
         });
       });
-      return { teamName, roster, innings, requests, teamColor, sheets, playerStats };
+
+      return { teamName, roster, innings, requests, teamColor, sheets, playerStats, options };
     }
     function hexToRgbParts(hex) {
       const clean = hex.replace('#','');
@@ -448,7 +493,9 @@ function inferMatchup(summary, teamName) {
         <div class="pill">Team: ${escapeHtml(plan.teamName)}</div>
         <div class="pill">Games: ${plan.sheets.length}</div>
         <div class="pill">Players: ${plan.roster.length}</div>
-        <div class="pill">Innings: ${plan.innings}</div>`;
+        <div class="pill">Innings: ${plan.innings}</div>
+        <div class="pill">No back-to-back OF: ${plan.options && plan.options.avoidBackToBackOutfield ? 'On' : 'Off'}</div>
+        <div class="pill">No repeat field spot: ${plan.options && plan.options.avoidRepeatFieldSameGame ? 'On' : 'Off'}</div>`;
       const firstSheet = plan.sheets[0];
       let html = `<div class="card" style="padding:0; box-shadow:none; border:1px solid var(--line);">
         <div style="padding:14px 14px 0 14px;"><h3 style="margin-bottom:4px;">${escapeHtml(firstSheet.dateText)}</h3><div class="small">${escapeHtml(firstSheet.matchup)}</div></div>
@@ -477,13 +524,17 @@ function inferMatchup(summary, teamName) {
       const innings = Math.max(1, Number(document.getElementById('innings').value || 3));
       const requests = document.getElementById('requests').value.trim();
       const teamColor = document.getElementById('teamColor').value;
+      const options = {
+        avoidBackToBackOutfield: document.getElementById('avoidBackToBackOutfield').checked,
+        avoidRepeatFieldSameGame: document.getElementById('avoidRepeatFieldSameGame').checked,
+      };
       if (!icsLink) throw new Error('Paste the TeamSnap games-only .ics link.');
       if (!roster.length) throw new Error('Add at least one player to the roster.');
       setStatus('success', 'Loading TeamSnap schedule...');
       const icsText = await fetchIcsText(icsLink);
       const parsed = parseScheduleFromIcs(icsText, teamOverride);
       if (!parsed.games.length) throw new Error('No games were found in that calendar feed.');
-      const plan = buildSeasonPlan(parsed.teamName, parsed.games, roster, innings, requests, teamColor);
+      const plan = buildSeasonPlan(parsed.teamName, parsed.games, roster, innings, requests, teamColor, options);
       latestPlan = plan;
       renderPreview(plan);
       setStatus('success', `Loaded ${plan.sheets.length} games for ${plan.teamName}.`);
