@@ -4,68 +4,117 @@
   <title>Team Lineup Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: Arial; padding: 20px; background:#f8fafc; }
-    textarea, input { width:100%; padding:10px; margin-top:5px; }
-    button { margin-top:10px; padding:10px 15px; }
-    .box { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+    body { font-family: Arial; padding: 20px; background:#f1f5f9; }
+    h2 { margin-bottom: 5px; }
+    .card {
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      margin-bottom:15px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    }
+    input, textarea {
+      width:100%;
+      padding:10px;
+      margin-top:8px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    }
+    button {
+      margin-top:15px;
+      padding:10px 15px;
+      border:none;
+      border-radius:8px;
+      background:#0f172a;
+      color:white;
+      cursor:pointer;
+    }
+    table {
+      width:100%;
+      border-collapse: collapse;
+      margin-top:10px;
+      font-size:14px;
+    }
+    th, td {
+      border:1px solid #ddd;
+      padding:6px;
+      text-align:center;
+    }
+    th { background:#f8fafc; }
   </style>
 </head>
 
 <body>
 
 <h2>Team Lineup Builder</h2>
+<p>Paste TeamSnap link → add roster → preview lineup</p>
 
-<div class="box">
+<div class="card">
   <label>TeamSnap Games Link</label>
-  <input id="link" placeholder="Paste TeamSnap .ics link" />
+  <input id="link" placeholder="Paste .ics link (games only)">
 </div>
 
-<div class="box">
-  <label>Roster</label>
-  <textarea id="roster" rows="8" placeholder="One player per line"></textarea>
+<div class="card">
+  <label>Roster (one per line)</label>
+  <textarea id="roster" rows="8"></textarea>
 </div>
 
-<div class="box">
+<div class="card">
   <label>Innings</label>
-  <input id="innings" type="number" value="3"/>
+  <input id="innings" type="number" value="3">
 </div>
 
-<div class="box">
-  <button onclick="preview()">Preview Excel Data</button>
-</div>
+<button onclick="build()">Generate Lineup</button>
 
-<pre id="output"></pre>
+<div id="preview"></div>
 
 <script>
-function preview() {
-  const roster = document.getElementById('roster').value.split("\n").filter(x=>x.trim());
-  const innings = parseInt(document.getElementById('innings').value) || 3;
 
-  const positions = [
-    "Pitcher","Catcher","1B","2B","3B","SS","LF","CF","RF"
-  ];
+const positions = [
+  "Pitcher","Catcher","1B","2B","3B","SS","LF","CF","RF"
+];
 
-  let rows = [];
+function build() {
+  const roster = document.getElementById("roster").value
+    .split("\n")
+    .map(x=>x.trim())
+    .filter(Boolean);
 
-  rows.push(["Game 1"]);
-  rows.push(["Team vs Opponent"]);
-  rows.push([]);
+  const innings = parseInt(document.getElementById("innings").value) || 3;
 
-  let header = ["Position"];
-  for(let i=1;i<=innings;i++) header.push("Inning "+i);
-  rows.push(header);
+  if(roster.length === 0){
+    alert("Add players first");
+    return;
+  }
+
+  let html = `
+  <div class="card">
+    <h3>Game 1 Lineup</h3>
+    <table>
+      <tr>
+        <th>Position</th>
+  `;
+
+  for(let i=1;i<=innings;i++){
+    html += `<th>Inning ${i}</th>`;
+  }
+
+  html += `</tr>`;
 
   positions.forEach((pos, i)=>{
-    let row=[pos];
+    html += `<tr><td>${pos}</td>`;
     for(let j=0;j<innings;j++){
-      row.push(roster[(i+j)%roster.length] || "");
+      let player = roster[(i+j)%roster.length] || "";
+      html += `<td>${player}</td>`;
     }
-    rows.push(row);
+    html += `</tr>`;
   });
 
-  document.getElementById("output").textContent =
-    JSON.stringify(rows, null, 2);
+  html += `</table></div>`;
+
+  document.getElementById("preview").innerHTML = html;
 }
+
 </script>
 
 </body>
